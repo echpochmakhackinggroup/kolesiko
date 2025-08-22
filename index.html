@@ -213,6 +213,50 @@
             color: #3498db;
         }
         
+        .history {
+            margin-top: 30px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        .history h2 {
+            margin-bottom: 10px;
+            color: #FFA500;
+        }
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 14px;
+        }
+        .history-item .meta {
+            color: #bdc3c7;
+            margin-right: 10px;
+            white-space: nowrap;
+        }
+        .history-item .reason {
+            flex: 1;
+            color: #ecf0f1;
+            margin: 0 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .history-item .result {
+            font-weight: bold;
+        }
+        
         @media (max-width: 600px) {
             .wheel-container {
                 width: 300px;
@@ -225,6 +269,11 @@
     <div class="container">
         <h1>колесико крутить онлайн</h1>
         
+        <div class="input-group" style="margin: 0 auto 15px; max-width: 500px;">
+            <label for="reason">Повод:</label>
+            <input type="text" id="reason" placeholder="Введите повод...">
+        </div>
+        
         <div class="wheel-container">
             <div class="pointer"></div>
             <div class="wheel" id="wheel"></div>
@@ -235,16 +284,11 @@
         
         <div class="controls">
             <div class="input-group">
-                <label for="yesCount">Количество Да:</label>
-                <input type="number" id="yesCount" min="1" max="5" value="3">
+                <label for="yesCount">МАКС (0–9):</label>
+                <input type="number" id="yesCount" min="0" max="9" value="0">
             </div>
             
-            <div class="input-group">
-                <label for="noCount">Количество Нет:</label>
-                <input type="number" id="noCount" min="1" max="5" value="3">
-            </div>
-            
-            <button id="spinBtn">Крутить колесо!</button>
+            <button id="spinBtn">Крутить</button>
         </div>
         
         <div class="firebase-config">
@@ -255,6 +299,11 @@
             <div id="connectionStatus" class="status disconnected">Не подключено</div>
             <div id="onlineCount" class="online-count">Пользователей онлайн: 0</div>
         </div>
+
+        <div class="history">
+            <h2>История круток</h2>
+            <div id="historyList" class="history-list"></div>
+        </div>
     </div>
 
     <script>
@@ -262,12 +311,13 @@
         const wheelElement = document.getElementById('wheel');
         const resultElement = document.getElementById('result');
         const yesCountInput = document.getElementById('yesCount');
-        const noCountInput = document.getElementById('noCount');
+        const reasonInput = document.getElementById('reason');
         const spinBtn = document.getElementById('spinBtn');
         const firebaseConfigTextarea = document.getElementById('firebaseConfig');
         const saveConfigBtn = document.getElementById('saveConfigBtn');
         const connectionStatus = document.getElementById('connectionStatus');
         const onlineCountElement = document.getElementById('onlineCount');
+        const historyListEl = document.getElementById('historyList');
         
         // Переменные состояния
         let isSpinning = false;
@@ -276,6 +326,7 @@
         let configRef = null;
         let connectedRef = null;
         let usersOnline = 0;
+        let historyRef = null;
         
         // Пример конфигурации Firebase (для подсказки)
         const exampleConfig = `{
@@ -290,11 +341,11 @@
         firebaseConfigTextarea.placeholder = exampleConfig;
         
         // Инициализация колеса
-        function initWheel(yesCount, noCount) {
+        function initWheel(yesCount) {
             wheelElement.innerHTML = '';
             wheelElement.style.transform = 'rotate(0deg)';
             
-            const totalItems = yesCount + noCount;
+            const totalItems = 10;
             const anglePerItem = 360 / totalItems;
             let stops = [];
             for (let i = 0; i < totalItems; i++) {
@@ -321,8 +372,8 @@
             resultElement.textContent = '';
             
             const yesCount = parseInt(yesCountInput.value);
-            const noCount = parseInt(noCountInput.value);
-            const totalItems = yesCount + noCount;
+            const noCount = 10 - yesCount;
+            const totalItems = 10;
             
             // Случайный угол вращения (минимум 5 полных оборотов)
             const rotations = 5 + Math.floor(Math.random() * 5);
@@ -356,6 +407,22 @@
                 if (wheelStateRef) {
                     wheelStateRef.update({ spinning: false });
                 }
+                
+                // Сохраняем запись в историю (append-only)
+                if (historyRef) {
+                    const nowTs = Date.now();
+                    historyRef.push({
+                        timestamp: nowTs,
+                        isoDate: new Date(nowTs).toISOString(),
+                        yesCount: yesCount,
+                        noCount: 10 - yesCount,
+                        totalItems: 10,
+                        result: result,
+                        targetAngle: targetAngle,
+                        randomItem: randomItem,
+                        reason: (typeof reasonInput?.value === 'string') ? reasonInput.value : ''
+                    });
+                }
             }, 5000);
         }
         
@@ -375,41 +442,22 @@
                 wheelStateRef = db.ref('wheelState');
                 configRef = db.ref('wheelConfig');
                 connectedRef = db.ref('.info/connected');
+                historyRef = db.ref('history');
+                
+                // Гарантируем существование коллекции history
+                historyRef.once('value', (snapshot) => {
+                    if (!snapshot.exists()) {
+                        historyRef.set({ _createdAt: Date.now() });
+                    }
+                });
                 
                 // Устанавливаем дефолтную конфигурацию при первом запуске
                 configRef.once('value', (snapshot) => {
                     if (!snapshot.exists()) {
-                        const yesCount = parseInt(yesCountInput.value) || 3;
-                        const noCount = parseInt(noCountInput.value) || 3;
-                        configRef.set({ yesCount, noCount });
-                    }
-                });
-                
-                // Слушаем изменения состояния
-                wheelStateRef.on('value', (snapshot) => {
-                    const state = snapshot.val();
-                    if (state) {
-                        // Если другое устройство запустило вращение
-                        if (state.spinning && !isSpinning) {
-                            isSpinning = true;
-                            spinBtn.disabled = true;
-                            resultElement.textContent = '';
-                            
-                            wheelElement.style.transition = 'transform 5s cubic-bezier(0.17, 0.67, 0.83, 0.67)';
-                            wheelElement.style.transform = `rotate(${state.targetAngle}deg)`;
-                            
-                            setTimeout(() => {
-                                resultElement.textContent = `Результат: ${state.result}!`;
-                                isSpinning = false;
-                                spinBtn.disabled = false;
-                            }, 5000);
-                        }
-                        
-                        // Если вращение завершено на другом устройстве
-                        if (!state.spinning && isSpinning) {
-                            isSpinning = false;
-                            spinBtn.disabled = false;
-                        }
+                        const yesCount = parseInt(yesCountInput.value) || 0;
+                        const noCount = 10 - yesCount;
+                        const reason = reasonInput.value || '';
+                        configRef.set({ yesCount, noCount, reason });
                     }
                 });
                 
@@ -417,9 +465,10 @@
                 configRef.on('value', (snapshot) => {
                     const config = snapshot.val();
                     if (config) {
-                        yesCountInput.value = config.yesCount;
-                        noCountInput.value = config.noCount;
-                        initWheel(config.yesCount, config.noCount);
+                        const yes = Math.min(Math.max(parseInt(config.yesCount) || 0, 0), 9);
+                        yesCountInput.value = yes;
+                        reasonInput.value = config.reason || '';
+                        initWheel(yes);
                     }
                 });
                 
@@ -434,6 +483,32 @@
                     usersOnline = snapshot.numChildren();
                     onlineCountElement.textContent = `Пользователей онлайн: ${usersOnline}`;
                 });
+
+                // Рендер истории (новые сверху)
+                if (historyRef && historyListEl) {
+                    historyRef.limitToLast(200).on('value', (snapshot) => {
+                        const data = snapshot.val() || {};
+                        const entries = Object.entries(data)
+                            .filter(([key]) => key !== '_createdAt')
+                            .map(([, v]) => v)
+                            .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                        historyListEl.innerHTML = entries.map((e) => {
+                            const dt = e.isoDate || new Date(e.timestamp || 0).toISOString();
+                            const reason = (e.reason || '').trim();
+                            const label = e.result === 'ДА' ? 'ДА' : 'NO';
+                            const color = e.result === 'ДА' ? '#27ae60' : '#e74c3c';
+                            const yesCount = typeof e.yesCount === 'number' ? e.yesCount : 0;
+                            return `
+                                <div class="history-item">
+                                    <div class="meta">${dt}</div>
+                                    <div class="reason">${reason || '—'}</div>
+                                    <div class="meta">МАКС: ${yesCount}/10</div>
+                                    <div class="result" style="color:${color}">${label}</div>
+                                </div>
+                            `;
+                        }).join('');
+                    });
+                }
                 
                 connectionStatus.textContent = 'Подключено к Firebase';
                 connectionStatus.className = 'status connected';
@@ -450,24 +525,21 @@
             if (!configRef) return;
             
             const yesCount = parseInt(yesCountInput.value);
-            const noCount = parseInt(noCountInput.value);
             
-            if (yesCount < 1 || noCount < 1) {
-                alert('Количество должно быть не менее 1');
+            if (yesCount < 0 || yesCount > 9) {
+                alert('МАКС  должно быть от 0 до 9');
                 return;
             }
             
-            if (yesCount + noCount > 20) {
-                alert('Общее количество секций не должно превышать 20');
-                return;
-            }
+            const noCount = 10 - yesCount;
             
-            configRef.set({
+            // Обновляем только yes/no, не трогаем reason
+            configRef.update({
                 yesCount: yesCount,
                 noCount: noCount
             });
             
-            initWheel(yesCount, noCount);
+            initWheel(yesCount);
         }
         
         // Дебаунс для уменьшения количества записей в БД при наборе
@@ -483,16 +555,40 @@
         spinBtn.addEventListener('click', spinWheel);
         
         // Реальное время: изменения инпутов сразу отправляются в Firebase
+        let emptyFillTimer = null;
         const debouncedSave = debounce(() => {
-            // Нормализуем значения в допустимых пределах
-            const yesVal = Math.min(Math.max(parseInt(yesCountInput.value) || 1, 1), 5);
-            const noVal = Math.min(Math.max(parseInt(noCountInput.value) || 1, 1), 5);
-            if (yesVal !== parseInt(yesCountInput.value)) yesCountInput.value = yesVal;
-            if (noVal !== parseInt(noCountInput.value)) noCountInput.value = noVal;
+            const raw = yesCountInput.value;
+            // Если поле пустое — ждём 2 секунды, затем подставим 0 и сохраним
+            if (raw === '' || raw == null) {
+                if (emptyFillTimer) clearTimeout(emptyFillTimer);
+                emptyFillTimer = setTimeout(() => {
+                    yesCountInput.value = '0';
+                    saveConfigToFirebase();
+                    emptyFillTimer = null;
+                }, 2000);
+                return;
+            }
+            // Есть ввод — отменяем отложенную подстановку и сохраняем с нормализацией через 300 мс
+            if (emptyFillTimer) {
+                clearTimeout(emptyFillTimer);
+                emptyFillTimer = null;
+            }
+            const yesVal = Math.min(Math.max(parseInt(raw) || 0, 0), 9);
+            if (String(yesVal) !== raw) {
+                yesCountInput.value = String(yesVal);
+            }
             saveConfigToFirebase();
         }, 300);
         yesCountInput.addEventListener('input', debouncedSave);
-        noCountInput.addEventListener('input', debouncedSave);
+        
+        // Дебаунс для «Повод»
+        const debouncedSaveReason = debounce(() => {
+            if (!configRef) return;
+            const reason = reasonInput.value || '';
+            // Обновляем только reason, не трогаем yes/no
+            configRef.update({ reason });
+        }, 400);
+        reasonInput.addEventListener('input', debouncedSaveReason);
         
         saveConfigBtn.addEventListener('click', () => {
             const configText = firebaseConfigTextarea.value.trim();
@@ -520,7 +616,7 @@
         // Загрузка сохраненной конфигурации при загрузке страницы
         window.addEventListener('DOMContentLoaded', () => {
             // Инициализируем колесо с значениями по умолчанию
-            initWheel(3, 3);
+            initWheel(0);
             
             // Проверяем, есть ли сохраненная конфигурация
             const savedConfig = localStorage.getItem('firebaseConfig');
