@@ -55,7 +55,7 @@
             position: relative;
             overflow: hidden;
             transition: transform 5s cubic-bezier(0.17, 0.67, 0.83, 0.67);
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5), inset 0 0 0 2px rgba(255, 255, 255, 0.3);
             border: 10px solid #2c3e50;
         }
         
@@ -65,6 +65,478 @@
             height: 50%;
             transform-origin: bottom right;
             display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        
+        .wheel-item.yes {
+            background: #27ae60;
+        }
+        
+        .wheel-item.no {
+            background: #e74c3c;
+        }
+        
+        .wheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            background: #2c3e50;
+            border-radius: 50%;
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .pointer {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 40px solid #FFD700;
+            filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.8));
+            z-index: 11;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        input {
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        button:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            min-height: 40px;
+            margin: 15px 0;
+            color: #FFD700;
+        }
+        
+        .firebase-config {
+            width: 100%;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .firebase-config h2 {
+            margin-bottom: 15px;
+            color: #FFA500;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            margin-bottom: 15px;
+            resize: vertical;
+            font-family: monospace;
+        }
+        
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        
+        .connected {
+            color: #2ecc71;
+        }
+        
+        .disconnected {
+            color: #e74c3c;
+        }
+        
+        .online-count {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 16px;
+            color: #3498db;
+        }
+        
+        @media (max-width: 600px) {
+            .wheel-container {
+                width: 300px;
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>колесико крутить онлайн</h1>
+        
+        <div class="wheel-container">
+            <div class="pointer"></div>
+            <div class="wheel" id="wheel"></div>
+            <div class="wheel-center">УРА ГОЛ ПОБЕДА ЕЕЕЕ</div>
+        </div>
+        
+        <div class="result" id="result"></div>
+        
+        <div class="controls">
+            <div class="input-group">
+                <label for="yesCount">Количество Да:</label>
+                <input type="number" id="yesCount" min="1" max="5" value="3">
+            </div>
+            
+            <div class="input-group">
+                <label for="noCount">Количество Нет:</label>
+                <input type="number" id="noCount" min="1" max="5" value="3">
+            </div>
+            
+            <button id="spinBtn">Крутить колесо!</button>
+        </div>
+        
+        <div class="firebase-config">
+            <h2>Настройка Firebase</h2>
+            <p>Вставьте конфигурацию Firebase для синхронизации состояния колеса:</p>
+            <textarea id="firebaseConfig" placeholder="Вставьте конфигурационный объект Firebase здесь..."></textarea>
+            <button id="saveConfigBtn">Сохранить конфигурацию</button>
+            <div id="connectionStatus" class="status disconnected">Не подключено</div>
+            <div id="onlineCount" class="online-count">Пользователей онлайн: 0</div>
+        </div>
+    </div>
+
+    <script>
+        // Элементы DOM
+        const wheelElement = document.getElementById('wheel');
+        const resultElement = document.getElementById('result');
+        const yesCountInput = document.getElementById('yesCount');
+        const noCountInput = document.getElementById('noCount');
+        const spinBtn = document.getElementById('spinBtn');
+        const firebaseConfigTextarea = document.getElementById('firebaseConfig');
+        const saveConfigBtn = document.getElementById('saveConfigBtn');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const onlineCountElement = document.getElementById('onlineCount');
+        
+        // Переменные состояния
+        let isSpinning = false;
+        let db = null;
+        let wheelStateRef = null;
+        let configRef = null;
+        let connectedRef = null;
+        let usersOnline = 0;
+        
+        // Пример конфигурации Firebase (для подсказки)
+        const exampleConfig = `{
+  
+
+
+
+
+        
+}`;
+        
+        firebaseConfigTextarea.placeholder = exampleConfig;
+        
+        // Инициализация колеса
+        function initWheel(yesCount, noCount) {
+            wheelElement.innerHTML = '';
+            wheelElement.style.transform = 'rotate(0deg)';
+            
+            const totalItems = yesCount + noCount;
+            const anglePerItem = 360 / totalItems;
+            let stops = [];
+            for (let i = 0; i < totalItems; i++) {
+                const start = i * anglePerItem;
+                const end = start + anglePerItem;
+                const color = i < yesCount ? '#27ae60' : '#e74c3c';
+                stops.push(`${color} ${start}deg ${end}deg`);
+                // Добавляем белые границы между секторами
+                if (i < totalItems - 1) {
+                    stops.push(`white ${end - 0.5}deg ${end + 0.5}deg`);
+                }
+            }
+            wheelElement.style.background = `conic-gradient(${stops.join(', ')})`;
+            
+            resultElement.textContent = '';
+        }
+        
+        // Кручение колеса
+        function spinWheel() {
+            if (isSpinning) return;
+            
+            isSpinning = true;
+            spinBtn.disabled = true;
+            resultElement.textContent = '';
+            
+            const yesCount = parseInt(yesCountInput.value);
+            const noCount = parseInt(noCountInput.value);
+            const totalItems = yesCount + noCount;
+            
+            // Случайный угол вращения (минимум 5 полных оборотов)
+            const rotations = 5 + Math.floor(Math.random() * 5);
+            const randomItem = Math.floor(Math.random() * totalItems);
+            const anglePerItem = 360 / totalItems;
+            const targetAngle = rotations * 360 + (randomItem * anglePerItem);
+            
+            // Анимация вращения
+            wheelElement.style.transition = 'transform 5s cubic-bezier(0.17, 0.67, 0.83, 0.67)';
+            wheelElement.style.transform = `rotate(${targetAngle}deg)`;
+            
+            // Сохранение состояния в Firebase
+            if (wheelStateRef) {
+                const state = {
+                    spinning: true,
+                    targetAngle: targetAngle,
+                    result: randomItem < yesCount ? 'ДА' : 'NO',
+                    timestamp: Date.now()
+                };
+                
+                wheelStateRef.set(state);
+            }
+            
+            // Отображение результата после завершения анимации
+            setTimeout(() => {
+                const result = randomItem < yesCount ? 'ДА' : 'NO';
+                resultElement.textContent = `Результат: ${result}!`;
+                isSpinning = false;
+                spinBtn.disabled = false;
+                
+                if (wheelStateRef) {
+                    wheelStateRef.update({ spinning: false });
+                }
+            }, 5000);
+        }
+        
+        // Инициализация Firebase
+        function initFirebase(config) {
+            try {
+                // Очищаем предыдущее соединение
+                if (db) {
+                    firebase.database().goOffline();
+                }
+                
+                // Инициализируем Firebase
+                firebase.initializeApp(config);
+                db = firebase.database();
+                
+                // Создаем ссылку на состояние колеса
+                wheelStateRef = db.ref('wheelState');
+                configRef = db.ref('wheelConfig');
+                connectedRef = db.ref('.info/connected');
+                
+                // Устанавливаем дефолтную конфигурацию при первом запуске
+                configRef.once('value', (snapshot) => {
+                    if (!snapshot.exists()) {
+                        const yesCount = parseInt(yesCountInput.value) || 3;
+                        const noCount = parseInt(noCountInput.value) || 3;
+                        configRef.set({ yesCount, noCount });
+                    }
+                });
+                
+                // Слушаем изменения состояния
+                wheelStateRef.on('value', (snapshot) => {
+                    const state = snapshot.val();
+                    if (state) {
+                        // Если другое устройство запустило вращение
+                        if (state.spinning && !isSpinning) {
+                            isSpinning = true;
+                            spinBtn.disabled = true;
+                            resultElement.textContent = '';
+                            
+                            wheelElement.style.transition = 'transform 5s cubic-bezier(0.17, 0.67, 0.83, 0.67)';
+                            wheelElement.style.transform = `rotate(${state.targetAngle}deg)`;
+                            
+                            setTimeout(() => {
+                                resultElement.textContent = `Результат: ${state.result}!`;
+                                isSpinning = false;
+                                spinBtn.disabled = false;
+                            }, 5000);
+                        }
+                        
+                        // Если вращение завершено на другом устройстве
+                        if (!state.spinning && isSpinning) {
+                            isSpinning = false;
+                            spinBtn.disabled = false;
+                        }
+                    }
+                });
+                
+                // Слушаем изменения конфигурации
+                configRef.on('value', (snapshot) => {
+                    const config = snapshot.val();
+                    if (config) {
+                        yesCountInput.value = config.yesCount;
+                        noCountInput.value = config.noCount;
+                        initWheel(config.yesCount, config.noCount);
+                    }
+                });
+                
+                // Отслеживаем количество подключенных пользователей
+                const usersRef = db.ref('users');
+                const userRef = usersRef.push();
+                
+                userRef.set(true);
+                userRef.onDisconnect().remove();
+                
+                usersRef.on('value', (snapshot) => {
+                    usersOnline = snapshot.numChildren();
+                    onlineCountElement.textContent = `Пользователей онлайн: ${usersOnline}`;
+                });
+                
+                connectionStatus.textContent = 'Подключено к Firebase';
+                connectionStatus.className = 'status connected';
+                
+            } catch (error) {
+                console.error('Ошибка инициализации Firebase:', error);
+                connectionStatus.textContent = 'Ошибка подключения: ' + error.message;
+                connectionStatus.className = 'status disconnected';
+            }
+        }
+        
+        // Сохранение конфигурации колеса в Firebase
+        function saveConfigToFirebase() {
+            if (!configRef) return;
+            
+            const yesCount = parseInt(yesCountInput.value);
+            const noCount = parseInt(noCountInput.value);
+            
+            if (yesCount < 1 || noCount < 1) {
+                alert('Количество должно быть не менее 1');
+                return;
+            }
+            
+            if (yesCount + noCount > 20) {
+                alert('Общее количество секций не должно превышать 20');
+                return;
+            }
+            
+            configRef.set({
+                yesCount: yesCount,
+                noCount: noCount
+            });
+            
+            initWheel(yesCount, noCount);
+        }
+        
+        // Дебаунс для уменьшения количества записей в БД при наборе
+        function debounce(fn, delay) {
+            let timerId;
+            return function(...args) {
+                clearTimeout(timerId);
+                timerId = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
+        // Обработчики событий
+        spinBtn.addEventListener('click', spinWheel);
+        
+        // Реальное время: изменения инпутов сразу отправляются в Firebase
+        const debouncedSave = debounce(() => {
+            // Нормализуем значения в допустимых пределах
+            const yesVal = Math.min(Math.max(parseInt(yesCountInput.value) || 1, 1), 5);
+            const noVal = Math.min(Math.max(parseInt(noCountInput.value) || 1, 1), 5);
+            if (yesVal !== parseInt(yesCountInput.value)) yesCountInput.value = yesVal;
+            if (noVal !== parseInt(noCountInput.value)) noCountInput.value = noVal;
+            saveConfigToFirebase();
+        }, 300);
+        yesCountInput.addEventListener('input', debouncedSave);
+        noCountInput.addEventListener('input', debouncedSave);
+        
+        saveConfigBtn.addEventListener('click', () => {
+            const configText = firebaseConfigTextarea.value.trim();
+            
+            if (!configText) {
+                alert('Введите конфигурацию Firebase');
+                return;
+            }
+            
+            try {
+                // Пытаемся преобразовать текст конфигурации в объект
+                const config = JSON.parse(configText);
+                
+                // Сохраняем конфигурацию в localStorage
+                localStorage.setItem('firebaseConfig', JSON.stringify(config));
+                
+                // Инициализируем Firebase
+                initFirebase(config);
+                
+            } catch (error) {
+                alert('Ошибка в формате конфигурации: ' + error.message);
+            }
+        });
+        
+        // Загрузка сохраненной конфигурации при загрузке страницы
+        window.addEventListener('DOMContentLoaded', () => {
+            // Инициализируем колесо с значениями по умолчанию
+            initWheel(3, 3);
+            
+            // Проверяем, есть ли сохраненная конфигурация
+            const savedConfig = localStorage.getItem('firebaseConfig');
+            if (savedConfig) {
+                try {
+                    const config = JSON.parse(savedConfig);
+                    firebaseConfigTextarea.value = JSON.stringify(config, null, 2);
+                    initFirebase(config);
+                } catch (error) {
+                    console.error('Ошибка загрузки конфигурации:', error);
+                }
+            }
+        });
+    </script>
+</body>
+</html>            display: flex;
             align-items: center;
             justify-content: center;
             color: white;
