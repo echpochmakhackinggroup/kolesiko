@@ -381,7 +381,13 @@
             const rotations = 5 + Math.floor(Math.random() * 5);
             const randomItem = Math.floor(Math.random() * totalItems);
             const anglePerItem = 360 / totalItems;
-            const targetAngle = rotations * 360 + (randomItem * anglePerItem);
+            
+            // Вычисляем угол так, чтобы колесо остановилось точно на секторе
+            // Учитываем, что стрелка находится вверху (0 градусов)
+            // Каждый сектор занимает anglePerItem градусов
+            // Центр сектора должен совпасть с позицией стрелки (0 градусов)
+            // Поэтому вычитаем позицию сектора от 0, чтобы сектор оказался под стрелкой
+            const targetAngle = rotations * 360 - (randomItem * anglePerItem) - (anglePerItem / 2);
             
             // Анимация вращения
             wheelElement.style.transition = 'transform 5s cubic-bezier(0.17, 0.67, 0.83, 0.67)';
@@ -417,7 +423,7 @@
                         timestamp: nowTs,
                         isoDate: new Date(nowTs).toISOString(),
                         yesCount: yesCount,
-                        noCount: 10 - yesCount,
+                        noCount: noCount,
                         totalItems: 10,
                         result: result,
                         targetAngle: targetAngle,
