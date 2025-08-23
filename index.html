@@ -285,7 +285,7 @@
         <div class="controls">
             <div class="input-group">
                 <label for="yesCount">МАКС (0–9):</label>
-                <input type="number" id="yesCount" min="0" max="9" value="0">
+                <input type="number" id="noCountInput" min="0" max="9" value="0">
             </div>
             
             <button id="spinBtn">Крутить</button>
@@ -310,7 +310,7 @@
         // Элементы DOM
         const wheelElement = document.getElementById('wheel');
         const resultElement = document.getElementById('result');
-        const yesCountInput = document.getElementById('yesCount');
+        const yesCountInput = document.getElementById('noCountInput');
         const reasonInput = document.getElementById('reason');
         const spinBtn = document.getElementById('spinBtn');
         const firebaseConfigTextarea = document.getElementById('firebaseConfig');
@@ -330,23 +330,25 @@
         
         // Пример конфигурации Firebase (для подсказки)
         const exampleConfig = `{
-  
-
-
-
-
-        
+  "apiKey": "your-api-key",
+  "authDomain": "your-project.firebaseapp.com",
+  "databaseURL": "https://your-project-default-rtdb.firebaseio.com",
+  "projectId": "your-project",
+  "storageBucket": "your-project.appspot.com",
+  "messagingSenderId": "123456789",
+  "appId": "your-app-id"
 }`;
         
         firebaseConfigTextarea.placeholder = exampleConfig;
         
         // Инициализация колеса
-        function initWheel(yesCount) {
+        function initWheel(noCount) {
             wheelElement.innerHTML = '';
             wheelElement.style.transform = 'rotate(0deg)';
             
             const totalItems = 10;
             const anglePerItem = 360 / totalItems;
+            const yesCount = 10 - noCount;
             let stops = [];
             for (let i = 0; i < totalItems; i++) {
                 const start = i * anglePerItem;
@@ -371,8 +373,8 @@
             spinBtn.disabled = true;
             resultElement.textContent = '';
             
-            const yesCount = parseInt(yesCountInput.value);
-            const noCount = 10 - yesCount;
+            const noCount = parseInt(yesCountInput.value);
+            const yesCount = 10 - noCount;
             const totalItems = 10;
             
             // Случайный угол вращения (минимум 5 полных оборотов)
@@ -454,10 +456,10 @@
                 // Устанавливаем дефолтную конфигурацию при первом запуске
                 configRef.once('value', (snapshot) => {
                     if (!snapshot.exists()) {
-                        const yesCount = parseInt(yesCountInput.value) || 0;
-                        const noCount = 10 - yesCount;
+                        const noCount = parseInt(yesCountInput.value) || 0;
+                        const yesCount = 10 - noCount;
                         const reason = reasonInput.value || '';
-                        configRef.set({ yesCount, noCount, reason });
+                        configRef.set({ noCount, yesCount, reason });
                     }
                 });
                 
@@ -465,10 +467,10 @@
                 configRef.on('value', (snapshot) => {
                     const config = snapshot.val();
                     if (config) {
-                        const yes = Math.min(Math.max(parseInt(config.yesCount) || 0, 0), 9);
-                        yesCountInput.value = yes;
+                        const no = Math.min(Math.max(parseInt(config.noCount) || 0, 0), 9);
+                        yesCountInput.value = no;
                         reasonInput.value = config.reason || '';
-                        initWheel(yes);
+                        initWheel(no);
                     }
                 });
                 
@@ -497,12 +499,12 @@
                             const reason = (e.reason || '').trim();
                             const label = e.result === 'ДА' ? 'ДА' : 'NO';
                             const color = e.result === 'ДА' ? '#27ae60' : '#e74c3c';
-                            const yesCount = typeof e.yesCount === 'number' ? e.yesCount : 0;
+                            const noCount = typeof e.noCount === 'number' ? e.noCount : 0;
                             return `
                                 <div class="history-item">
                                     <div class="meta">${dt}</div>
                                     <div class="reason">${reason || '—'}</div>
-                                    <div class="meta">МАКС: ${yesCount}/10</div>
+                                    <div class="meta">МАКС: ${noCount}/10</div>
                                     <div class="result" style="color:${color}">${label}</div>
                                 </div>
                             `;
@@ -524,22 +526,22 @@
         function saveConfigToFirebase() {
             if (!configRef) return;
             
-            const yesCount = parseInt(yesCountInput.value);
+            const noCount = parseInt(yesCountInput.value);
             
-            if (yesCount < 0 || yesCount > 9) {
+            if (noCount < 0 || noCount > 9) {
                 alert('МАКС  должно быть от 0 до 9');
                 return;
             }
             
-            const noCount = 10 - yesCount;
+            const yesCount = 10 - noCount;
             
             // Обновляем только yes/no, не трогаем reason
             configRef.update({
-                yesCount: yesCount,
-                noCount: noCount
+                noCount: noCount,
+                yesCount: yesCount
             });
             
-            initWheel(yesCount);
+            initWheel(noCount);
         }
         
         // Дебаунс для уменьшения количества записей в БД при наборе
@@ -573,9 +575,9 @@
                 clearTimeout(emptyFillTimer);
                 emptyFillTimer = null;
             }
-            const yesVal = Math.min(Math.max(parseInt(raw) || 0, 0), 9);
-            if (String(yesVal) !== raw) {
-                yesCountInput.value = String(yesVal);
+            const noVal = Math.min(Math.max(parseInt(raw) || 0, 0), 9);
+            if (String(noVal) !== raw) {
+                yesCountInput.value = String(noVal);
             }
             saveConfigToFirebase();
         }, 300);
