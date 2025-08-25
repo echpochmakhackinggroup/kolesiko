@@ -273,6 +273,149 @@
             user-select: text;
         }
         
+        /* Chat widget */
+        .chat-widget {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 320px;
+            max-height: 50vh;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 50;
+            transition: left 0.25s ease, top 0.25s ease, right 0.25s ease, bottom 0.25s ease, width 0.25s ease, margin 0.25s ease, max-height 0.25s ease, transform 0.25s ease, opacity 0.25s ease;
+        }
+        .chat-header {
+            padding: 8px 10px;
+            background: rgba(255,255,255,0.08);
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            font-weight: bold;
+            cursor: move;
+            user-select: none;
+        }
+        .chat-messages {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .chat-input {
+            display: flex;
+            gap: 8px;
+            padding: 10px;
+            border-top: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.06);
+        }
+        .chat-input input[type="text"] {
+            flex: 1;
+            background: rgba(255,255,255,0.9);
+            border-radius: 6px;
+            padding: 8px 10px;
+            color: #2c3e50;
+        }
+        .chat-send-btn {
+            background: #2ecc71;
+            color: #1b2a3a;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .chat-message {
+            display: inline-block;
+            max-width: 85%;
+            padding: 6px 8px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+        }
+        .chat-message.me {
+            align-self: flex-end;
+            background: rgba(46, 204, 113, 0.2);
+        }
+        .chat-meta {
+            font-size: 11px;
+            color: #bdc3c7;
+            margin-top: 2px;
+        }
+        .chat-typing {
+            padding: 6px 10px;
+            font-size: 12px;
+            color: #bdc3c7;
+        }
+        
+        /* PIN overlay */
+        .pin-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(2px);
+        }
+        .pin-overlay.active {
+            display: flex;
+        }
+        .pin-modal {
+            width: 90%;
+            max-width: 360px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+        .pin-modal h3 {
+            margin-bottom: 8px;
+            color: #FFD700;
+            text-align: center;
+        }
+        .pin-modal p {
+            margin-bottom: 12px;
+            color: #ecf0f1;
+            text-align: center;
+            font-size: 14px;
+        }
+        .pin-field {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            justify-content: center;
+        }
+        .pin-field input[type="password"] {
+            width: 40px;
+            height: 48px;
+            text-align: center;
+            font-size: 22px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.9);
+            color: #2c3e50;
+        }
+        .pin-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+        .pin-actions button {
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .pin-error {
+            color: #e74c3c;
+            text-align: center;
+            min-height: 18px;
+            margin-top: 6px;
+            font-size: 13px;
+        }
+        
+        /* Mobile placement */
         @media (max-width: 600px) {
             .wheel-container {
                 width: 300px;
@@ -304,6 +447,64 @@
             .history-list {
                 max-height: 250px;
             }
+            .chat-widget {
+                position: static;
+                width: 100%;
+                max-height: none;
+                margin-top: 12px;
+            }
+            .chat-header {
+                cursor: default;
+            }
+        }
+        /* Chat becomes non-widget on narrower screens */
+        @media (max-width: 1000px) {
+            .chat-widget {
+                position: static;
+                width: 100%;
+                max-height: none;
+                margin-top: 12px;
+                left: auto;
+                top: auto;
+                right: auto;
+                bottom: auto;
+            }
+            .chat-header {
+                cursor: default;
+            }
+        }
+        /* Footer */
+        .site-footer {
+            margin-top: 24px;
+            padding: 12px 14px;
+            border-top: 1px solid rgba(255,255,255,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: #bdc3c7;
+        }
+        .site-footer a {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #bdc3c7;
+        }
+        .site-footer a:hover {
+            color: #ffffff;
+        }
+        .footer-avatar {
+            width: clamp(28px, 6vw, 40px);
+            height: clamp(28px, 6vw, 40px);
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.25);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+            object-fit: cover;
+        }
+        .footer-text {
+            font-size: clamp(12px, 2.2vw, 14px);
+            font-weight: 600;
         }
     </style>
 </head>
@@ -340,11 +541,39 @@
             <button id="saveConfigBtn">Сохранить конфигурацию</button>
             <div id="connectionStatus" class="status disconnected">Не подключено</div>
             <div id="onlineCount" class="online-count">Пользователей онлайн: 0</div>
+            
+            <div id="chatWidget" class="chat-widget" aria-live="polite">
+                <div id="chatHeader" class="chat-header">Чат</div>
+                <div id="chatMessages" class="chat-messages"></div>
+                <div id="chatTyping" class="chat-typing" style="display:none;">Кто-то печатает…</div>
+                <div class="chat-input">
+                    <input id="chatInput" type="text" placeholder="Напишите сообщение..." />
+                    <button id="chatSend" class="chat-send-btn">Отправить</button>
+                </div>
+            </div>
         </div>
 
         <div class="history">
             <h2>История круток</h2>
             <div id="historyList" class="history-list"></div>
+        </div>
+        <div class="pin-overlay" id="pinOverlay" aria-modal="true" role="dialog">
+            <div class="pin-modal">
+                <h3 id="pinTitle">Введите PIN</h3>
+                <p id="pinSubtitle">Для доступа введите 6-значный PIN</p>
+                <div class="pin-field" id="pinField"></div>
+                <div class="pin-actions">
+                    <button id="pinConfirm">Подтвердить</button>
+                    <button id="pinReset">Сбросить PIN</button>
+                </div>
+                <div class="pin-error" id="pinError"></div>
+            </div>
+        </div>
+        <div class="site-footer">
+            <a href="https://github.com/echpochmakhackinggroup" target="_blank" rel="noopener noreferrer">
+                <img class="footer-avatar" src="https://avatars.githubusercontent.com/u/121233723?v=4" alt="ECHG Avatar" />
+                <span class="footer-text">echpochmakhackinggroup</span>
+            </a>
         </div>
     </div>
 
@@ -369,6 +598,20 @@
         let connectedRef = null;
         let usersOnline = 0;
         let historyRef = null;
+        
+        // Chat elements
+        const chatWidget = document.getElementById('chatWidget');
+        const chatHeader = document.getElementById('chatHeader');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatTyping = document.getElementById('chatTyping');
+        const chatInput = document.getElementById('chatInput');
+        const chatSend = document.getElementById('chatSend');
+        
+        // Chat refs
+        let chatRootRef = null;
+        let chatMessagesRef = null;
+        let chatTypingRef = null;
+        let myTypingRef = null;
         
         // Пример конфигурации Firebase (для подсказки)
         const exampleConfig = `{
@@ -493,11 +736,30 @@
                 configRef = db.ref('wheelConfig');
                 connectedRef = db.ref('.info/connected');
                 historyRef = db.ref('history');
+                chatRootRef = db.ref('chat');
+                chatMessagesRef = db.ref('chat/messages');
+                chatTypingRef = db.ref('chat/typing');
                 
                 // Гарантируем существование коллекции history
                 historyRef.once('value', (snapshot) => {
                     if (!snapshot.exists()) {
                         historyRef.set({ _createdAt: Date.now() });
+                    }
+                });
+                // Гарантируем существование корня чата и списков
+                chatRootRef.once('value', (snapshot) => {
+                    if (!snapshot.exists()) {
+                        chatRootRef.set({ _createdAt: Date.now() });
+                    }
+                });
+                chatMessagesRef.once('value', (snapshot) => {
+                    if (!snapshot.exists()) {
+                        chatMessagesRef.set({ _createdAt: Date.now() });
+                    }
+                });
+                chatTypingRef.once('value', (snapshot) => {
+                    if (!snapshot.exists()) {
+                        chatTypingRef.set({ _createdAt: Date.now() });
                     }
                 });
                 
@@ -582,6 +844,7 @@
                 
                 connectionStatus.textContent = 'Подключено к Firebase';
                 connectionStatus.className = 'status connected';
+                initChatRealtime();
                 
             } catch (error) {
                 console.error('Ошибка инициализации Firebase:', error);
@@ -589,7 +852,88 @@
                 connectionStatus.className = 'status disconnected';
             }
         }
-        
+
+        // Chat: render one message
+        function appendChatMessage(msg, isMe) {
+            const wrap = document.createElement('div');
+            wrap.className = `chat-message${isMe ? ' me' : ''}`;
+            wrap.textContent = msg.text || '';
+            const meta = document.createElement('div');
+            meta.className = 'chat-meta';
+            const dt = msg.isoDate || new Date(msg.timestamp || 0).toISOString();
+            meta.textContent = dt;
+            chatMessages.appendChild(wrap);
+            chatMessages.appendChild(meta);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Chat: listeners and send/typing handlers
+        function initChatRealtime() {
+            if (!db) return;
+            const deviceId = localStorage.getItem('deviceId') || (() => {
+                const id = Math.random().toString(36).slice(2);
+                localStorage.setItem('deviceId', id);
+                return id;
+            })();
+            myTypingRef = db.ref(`chat/typing/${deviceId}`);
+            myTypingRef.onDisconnect().remove();
+
+            // Messages: stream
+            if (chatMessagesRef) {
+                chatMessagesRef.limitToLast(200).on('child_added', (snap) => {
+                    const msg = snap.val();
+                    if (!msg || msg._createdAt) return;
+                    appendChatMessage(msg, msg.deviceId === deviceId);
+                });
+            }
+
+            // Typing indicator (someone else is typing)
+            if (chatTypingRef) {
+                chatTypingRef.on('value', (snap) => {
+                    const val = snap.val() || {};
+                    const othersTyping = Object.keys(val).some((k) => k !== deviceId);
+                    chatTyping.style.display = othersTyping ? 'block' : 'none';
+                });
+            }
+
+            // Send message
+            function sendMessage() {
+                const text = chatInput.value.trim();
+                if (!text || !chatMessagesRef) return;
+                const now = Date.now();
+                chatMessagesRef.push({
+                    text,
+                    timestamp: now,
+                    isoDate: new Date(now).toISOString(),
+                    deviceId
+                });
+                chatInput.value = '';
+            }
+            chatSend.addEventListener('click', sendMessage);
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Typing
+            let typingTimer = null;
+            function setTyping(isTyping) {
+                if (!myTypingRef) return;
+                if (isTyping) {
+                    myTypingRef.set({ timestamp: Date.now() });
+                } else {
+                    myTypingRef.remove();
+                }
+            }
+            chatInput.addEventListener('input', () => {
+                setTyping(true);
+                if (typingTimer) clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => setTyping(false), 1500);
+            });
+        }
+
         // Сохранение конфигурации колеса в Firebase
         function saveConfigToFirebase() {
             if (!configRef) return;
@@ -735,6 +1079,204 @@
             }
             return fragment;
         }
+
+        // PIN logic
+        const pinOverlay = document.getElementById('pinOverlay');
+        const pinField = document.getElementById('pinField');
+        const pinTitle = document.getElementById('pinTitle');
+        const pinSubtitle = document.getElementById('pinSubtitle');
+        const pinConfirm = document.getElementById('pinConfirm');
+        const pinReset = document.getElementById('pinReset');
+        const pinError = document.getElementById('pinError');
+        
+        function buildPinInputs() {
+            pinField.innerHTML = '';
+            for (let i = 0; i < 6; i++) {
+                const inp = document.createElement('input');
+                inp.type = 'password';
+                inp.inputMode = 'numeric';
+                inp.maxLength = 1;
+                inp.autocomplete = 'off';
+                inp.addEventListener('input', (e) => {
+                    const v = e.target.value.replace(/\D/g, '');
+                    e.target.value = v.slice(0, 1);
+                    if (v && i < 5) pinField.children[i + 1].focus();
+                });
+                inp.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && i > 0) {
+                        pinField.children[i - 1].focus();
+                    }
+                });
+                pinField.appendChild(inp);
+            }
+        }
+        
+        function readPinFromInputs() {
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += pinField.children[i].value || '';
+            }
+            return code;
+        }
+        
+        function showPinOverlay(mode) {
+            // mode: 'create' | 'enter'
+            buildPinInputs();
+            pinError.textContent = '';
+            if (mode === 'create') {
+                pinTitle.textContent = 'Создайте PIN';
+                pinSubtitle.textContent = 'Придумайте 6-значный PIN. Запомните его!';
+            } else {
+                pinTitle.textContent = 'Введите PIN';
+                pinSubtitle.textContent = 'Для доступа введите 6-значный PIN';
+            }
+            pinOverlay.classList.add('active');
+            setTimeout(() => {
+                const first = pinField.querySelector('input');
+                if (first) first.focus();
+            }, 0);
+        }
+        
+        function hidePinOverlay() {
+            pinOverlay.classList.remove('active');
+        }
+        
+        function gateByPinOnLoad() {
+            const storedPin = localStorage.getItem('wheel_pin');
+            if (!storedPin) {
+                showPinOverlay('create');
+            } else {
+                showPinOverlay('enter');
+            }
+        }
+        
+        pinConfirm.addEventListener('click', () => {
+            const storedPin = localStorage.getItem('wheel_pin');
+            const code = readPinFromInputs();
+            if (!/^\d{6}$/.test(code)) {
+                pinError.textContent = 'Введите 6 цифр';
+                return;
+            }
+            if (!storedPin) {
+                localStorage.setItem('wheel_pin', code);
+                hidePinOverlay();
+            } else {
+                if (code === storedPin) {
+                    hidePinOverlay();
+                } else {
+                    pinError.textContent = 'Неверный PIN';
+                }
+            }
+        });
+        
+        pinReset.addEventListener('click', () => {
+            // Reset PIN
+            localStorage.removeItem('wheel_pin');
+            
+            // Reset Firebase configuration stored locally
+            try {
+                localStorage.removeItem('firebaseConfig');
+            } catch (_) {}
+            if (firebaseConfigTextarea) {
+                firebaseConfigTextarea.value = '';
+            }
+            
+            // Disconnect from Firebase and reset runtime refs/UI
+            try {
+                if (db) {
+                    firebase.database().goOffline();
+                }
+            } catch (_) {}
+            db = null;
+            wheelStateRef = null;
+            configRef = null;
+            connectedRef = null;
+            historyRef = null;
+            
+            if (connectionStatus) {
+                connectionStatus.textContent = 'Не подключено';
+                connectionStatus.className = 'status disconnected';
+            }
+            if (onlineCountElement) {
+                onlineCountElement.textContent = 'Пользователей онлайн: 0';
+            }
+            
+            // Return to create PIN flow
+            showPinOverlay('create');
+        });
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            gateByPinOnLoad();
+        });
+
+        // Chat drag (desktop)
+        (function enableChatDrag() {
+            if (!chatWidget || !chatHeader) return;
+            let isDragging = false;
+            let startX = 0;
+            let startY = 0;
+            let startLeft = 0;
+            let startTop = 0;
+            function onMouseDown(e) {
+                // Only when fixed (desktop)
+                const style = window.getComputedStyle(chatWidget);
+                if (style.position !== 'fixed') return;
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                const rect = chatWidget.getBoundingClientRect();
+                startLeft = rect.left;
+                startTop = rect.top;
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            }
+            function onMouseMove(e) {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                const newLeft = Math.max(0, Math.min(window.innerWidth - chatWidget.offsetWidth, startLeft + dx));
+                const newTop = Math.max(0, Math.min(window.innerHeight - chatWidget.offsetHeight, startTop + dy));
+                chatWidget.style.left = newLeft + 'px';
+                chatWidget.style.top = newTop + 'px';
+                chatWidget.style.right = 'auto';
+                chatWidget.style.bottom = 'auto';
+            }
+            function onMouseUp() {
+                isDragging = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            }
+            chatHeader.addEventListener('mousedown', onMouseDown);
+        })();
+
+        // Mobile: limit chat height to history height
+        function updateChatMaxHeightMobile() {
+            if (!chatWidget) return;
+            const isMobile = window.innerWidth <= 1000;
+            if (isMobile) {
+                const historySection = document.querySelector('.history');
+                if (historySection) {
+                    const h = Math.max(0, historySection.getBoundingClientRect().height | 0);
+                    if (h > 0) {
+                        chatWidget.style.maxHeight = h + 'px';
+                        return;
+                    }
+                }
+                // Fallback if history not found
+                chatWidget.style.maxHeight = '250px';
+            } else {
+                chatWidget.style.maxHeight = '50vh';
+            }
+        }
+        window.addEventListener('resize', updateChatMaxHeightMobile);
+        if (historyListEl) {
+            const ro = new (window.ResizeObserver || function(cb){ this.observe = () => {}; })((entries) => {
+                updateChatMaxHeightMobile();
+            });
+            try { ro.observe(historyListEl); } catch (_) {}
+        }
+        // Initial call after DOM ready
+        window.addEventListener('DOMContentLoaded', updateChatMaxHeightMobile);
     </script>
 </body>
 </html>
