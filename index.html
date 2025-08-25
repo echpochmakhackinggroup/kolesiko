@@ -257,6 +257,22 @@
             font-weight: bold;
         }
         
+        .spoiler {
+            color: transparent;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            padding: 0 4px;
+            cursor: pointer;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+            user-select: none;
+        }
+        .spoiler.revealed {
+            color: inherit;
+            background: transparent;
+            text-shadow: none;
+            user-select: text;
+        }
+        
         @media (max-width: 600px) {
             .wheel-container {
                 width: 300px;
@@ -526,21 +542,41 @@
                             .filter(([key]) => key !== '_createdAt')
                             .map(([, v]) => v)
                             .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                        historyListEl.innerHTML = entries.map((e) => {
+                        historyListEl.innerHTML = '';
+                        entries.forEach((e) => {
                             const dt = e.isoDate || new Date(e.timestamp || 0).toISOString();
-                            const reason = (e.reason || '').trim();
+                            const reasonText = (e.reason || '').trim();
                             const label = e.result === 'ДА' ? 'ДА' : 'NO';
                             const color = e.result === 'ДА' ? '#27ae60' : '#e74c3c';
                             const noCount = typeof e.noCount === 'number' ? e.noCount : 0;
-                            return `
-                                <div class="history-item">
-                                    <div class="meta">${dt}</div>
-                                    <div class="reason">${reason || '—'}</div>
-                                    <div class="meta">МАКС: ${noCount}/10</div>
-                                    <div class="result" style="color:${color}">${label}</div>
-                                </div>
-                            `;
-                        }).join('');
+
+                            const item = document.createElement('div');
+                            item.className = 'history-item';
+
+                            const metaEl = document.createElement('div');
+                            metaEl.className = 'meta';
+                            metaEl.textContent = dt;
+
+                            const reasonEl = document.createElement('div');
+                            reasonEl.className = 'reason';
+                            const reasonContent = reasonText ? renderTextWithSpoilers(reasonText) : document.createTextNode('—');
+                            reasonEl.appendChild(reasonContent);
+
+                            const maxEl = document.createElement('div');
+                            maxEl.className = 'meta';
+                            maxEl.textContent = `МАКС: ${noCount}/10`;
+
+                            const resultEl = document.createElement('div');
+                            resultEl.className = 'result';
+                            resultEl.style.color = color;
+                            resultEl.textContent = label;
+
+                            item.appendChild(metaEl);
+                            item.appendChild(reasonEl);
+                            item.appendChild(maxEl);
+                            item.appendChild(resultEl);
+                            historyListEl.appendChild(item);
+                        });
                     });
                 }
                 
@@ -664,6 +700,41 @@
                 }
             }
         });
+
+        function renderTextWithSpoilers(text) {
+            const t = String(text ?? '');
+            const fragment = document.createDocumentFragment();
+            let i = 0;
+            while (i < t.length) {
+                const start = t.indexOf('||', i);
+                if (start === -1) {
+                    // Остаток как обычный текст
+                    fragment.appendChild(document.createTextNode(t.slice(i)));
+                    break;
+                }
+                // Текст до спойлера
+                if (start > i) {
+                    fragment.appendChild(document.createTextNode(t.slice(i, start)));
+                }
+                const end = t.indexOf('||', start + 2);
+                if (end === -1) {
+                    // Нет закрывающего — всё остальное как текст
+                    fragment.appendChild(document.createTextNode(t.slice(start)));
+                    break;
+                }
+                // Содержимое спойлера
+                const inner = t.slice(start + 2, end);
+                const span = document.createElement('span');
+                span.className = 'spoiler';
+                span.textContent = inner;
+                span.addEventListener('click', () => {
+                    span.classList.toggle('revealed');
+                });
+                fragment.appendChild(span);
+                i = end + 2;
+            }
+            return fragment;
+        }
     </script>
 </body>
 </html>
