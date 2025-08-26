@@ -326,7 +326,9 @@
             font-weight: bold;
         }
         .chat-message {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             max-width: 85%;
             padding: 6px 8px;
             border-radius: 8px;
@@ -340,6 +342,17 @@
             font-size: 11px;
             color: #bdc3c7;
             margin-top: 2px;
+        }
+        .chat-meta .read-indicator {
+            margin-left: 6px;
+            color: #2ecc71;
+            font-weight: 600;
+        }
+        .chat-message .read-indicator {
+            margin-left: auto;
+            color: #2ecc71;
+            font-weight: 600;
+            font-size: 12px;
         }
         .chat-typing {
             padding: 6px 10px;
@@ -612,6 +625,7 @@
         let chatMessagesRef = null;
         let chatTypingRef = null;
         let myTypingRef = null;
+        let myDeviceId = null;
         
         // Пример конфигурации Firebase (для подсказки)
         const exampleConfig = `{
@@ -854,28 +868,47 @@
         }
 
         // Chat: render one message
-        function appendChatMessage(msg, isMe) {
+        function appendChatMessage(msg, isMe, key) {
             const wrap = document.createElement('div');
             wrap.className = `chat-message${isMe ? ' me' : ''}`;
-            wrap.textContent = msg.text || '';
+            const textSpan = document.createElement('span');
+            textSpan.textContent = msg.text || '';
+            wrap.appendChild(textSpan);
+            // Read indicator inside bubble (right side)
+            const readEl = document.createElement('span');
+            readEl.className = 'read-indicator';
+            readEl.textContent = '✓';
+            readEl.style.display = 'none';
+            wrap.appendChild(readEl);
+
             const meta = document.createElement('div');
             meta.className = 'chat-meta';
             const dt = msg.isoDate || new Date(msg.timestamp || 0).toISOString();
             meta.textContent = dt;
+            
             chatMessages.appendChild(wrap);
             chatMessages.appendChild(meta);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            if (isMe && chatMessagesRef && key) {
+                const seenRef = chatMessagesRef.child(key).child('seenBy');
+                seenRef.on('value', (snap) => {
+                    const val = snap.val() || {};
+                    const someoneElseSeen = Object.keys(val).some((k) => k !== myDeviceId);
+                    readEl.style.display = someoneElseSeen ? 'inline' : 'none';
+                });
+            }
         }
 
         // Chat: listeners and send/typing handlers
         function initChatRealtime() {
             if (!db) return;
-            const deviceId = localStorage.getItem('deviceId') || (() => {
+            myDeviceId = localStorage.getItem('deviceId') || (() => {
                 const id = Math.random().toString(36).slice(2);
                 localStorage.setItem('deviceId', id);
                 return id;
             })();
-            myTypingRef = db.ref(`chat/typing/${deviceId}`);
+            myTypingRef = db.ref(`chat/typing/${myDeviceId}`);
             myTypingRef.onDisconnect().remove();
 
             // Messages: stream
@@ -883,7 +916,18 @@
                 chatMessagesRef.limitToLast(200).on('child_added', (snap) => {
                     const msg = snap.val();
                     if (!msg || msg._createdAt) return;
-                    appendChatMessage(msg, msg.deviceId === deviceId);
+                    const isMe = msg.deviceId === myDeviceId;
+                    appendChatMessage(msg, isMe, snap.key);
+                    // Mark as seen if message is from others
+                    if (!isMe) {
+                        try {
+                            chatMessagesRef.child(snap.key).child('seenBy').child(myDeviceId).set(Date.now());
+                        } catch (_) {}
+                    }
+                });
+                // Update messages on change (e.g., seenBy updates) if needed
+                chatMessagesRef.limitToLast(200).on('child_changed', (snap) => {
+                    // No-op here because each own message has its own listener on seenBy
                 });
             }
 
@@ -891,7 +935,7 @@
             if (chatTypingRef) {
                 chatTypingRef.on('value', (snap) => {
                     const val = snap.val() || {};
-                    const othersTyping = Object.keys(val).some((k) => k !== deviceId);
+                    const othersTyping = Object.keys(val).some((k) => k !== myDeviceId);
                     chatTyping.style.display = othersTyping ? 'block' : 'none';
                 });
             }
@@ -901,11 +945,12 @@
                 const text = chatInput.value.trim();
                 if (!text || !chatMessagesRef) return;
                 const now = Date.now();
-                chatMessagesRef.push({
+                const newMsgRef = chatMessagesRef.push();
+                newMsgRef.set({
                     text,
                     timestamp: now,
                     isoDate: new Date(now).toISOString(),
-                    deviceId
+                    deviceId: myDeviceId
                 });
                 chatInput.value = '';
             }
